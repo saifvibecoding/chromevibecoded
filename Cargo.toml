@@ -6,7 +6,7 @@ description = "A lightweight, gaming-friendly browser shell written in Rust"
 license = "MIT"
 
 [dependencies]
-wry = "0.57"
+wry = { version = "0.57", features = ["devtools"] }
 tao = "0.37"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
