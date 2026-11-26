@@ -27,11 +27,34 @@ jobs:
         with:
           name: rustium-windows-x64
           path: target/release/rustium.exe
-      - name: Publish release (tags only)
-        if: startsWith(github.ref, 'refs/tags/v')
+      # Publish a GitHub Release with rustium.exe. Runs for version tags and for pushes to
+      # main / the development branch; the release tag (vX.Y.Z from Cargo.toml) is created
+      # by this step, so no tag has to be pushed by hand.
+      - name: Read version
+        id: ver
+        shell: bash
+        run: echo "tag=v$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)" >> "$GITHUB_OUTPUT"
+      - name: Publish release
+        if: >-
+          github.event_name != 'pull_request' && (
+            startsWith(github.ref, 'refs/tags/v') ||
+            github.ref == 'refs/heads/main' ||
+            github.ref == 'refs/heads/claude/chrome-rust-implementation-370f3e' ||
+            github.event_name == 'workflow_dispatch')
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || steps.ver.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: Rustium ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || steps.ver.outputs.tag }}
+          make_latest: true
+          overwrite_files: true
           files: target/release/rustium.exe
+          body: |
+            **Download `rustium.exe` below and run it** — no installer needed. Windows 10/11 (uses the built-in Microsoft WebView2 / Chromium engine).
+
+            Windows SmartScreen may warn because the exe isn't code-signed: click **More info → Run anyway**.
+
+            Bring your Chrome passwords: in Chrome open `chrome://password-manager/settings` → **Export passwords**, then in Rustium click 🔑 → **Import CSV** (and delete the CSV afterwards). Bookmarks: ⋮ → Bookmarks → **Import from Chrome**.
 
   linux:
     name: Linux (WebKitGTK)
